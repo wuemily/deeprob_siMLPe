@@ -35,6 +35,7 @@ def regress_pred(model, pbar, num_samples, joint_used_xyz, m_p3d_h36):
     for (motion_input, motion_target) in pbar:
         motion_input = motion_input.cuda()
         b,n,c,_ = motion_input.shape
+        print("banana", motion_input.shape)
         num_samples += b
 
         motion_input = motion_input.reshape(b, n, 32, 3)
@@ -52,6 +53,7 @@ def regress_pred(model, pbar, num_samples, joint_used_xyz, m_p3d_h36):
                     motion_input_ = torch.matmul(dct_m[:, :, :config.motion.h36m_input_length], motion_input_.cuda())
                 else:
                     motion_input_ = motion_input.clone()
+                print("motion_input_ shape", motion_input_.shape)
                 output = model(motion_input_)
                 output = torch.matmul(idct_m[:, :config.motion.h36m_input_length, :], output)[:, :step, :]
                 if config.deriv_output:
@@ -98,6 +100,40 @@ def test(config, model, dataloader) :
         ret["#{:d}".format(titles[j])] = [m_p3d_h36[j], m_p3d_h36[j]]
     return [round(ret[key][0], 1) for key in results_keys]
 
+# modifications:
+
+from utils.misc import expmap2rotmat_torch, find_indices_256, find_indices_srnn, rotmat2xyz_torch
+
+def process_data(filename):
+    print(filename)
+    info = open(filename, 'r').readlines()
+    pose_info = []
+    for line in info:
+        line = line.strip().split(',')
+        if len(line) > 0:
+            pose_info.append(np.array([float(x) for x in line]))
+    pose_info = np.array(pose_info)
+    pose_info = pose_info.reshape(-1, 33, 3)
+    pose_info[:, :2] = 0
+    N = pose_info.shape[0]
+    pose_info = pose_info.reshape(-1, 3)
+    pose_info = expmap2rotmat_torch(torch.tensor(pose_info).float()).reshape(N, 33, 3, 3)[:, 1:]
+    pose_info = rotmat2xyz_torch(pose_info)
+
+    sample_rate = 2
+    sampled_index = np.arange(0, N, sample_rate)
+    h36m_motion_poses = pose_info[sampled_index]
+
+    T = h36m_motion_poses.shape[0]
+    h36m_motion_poses = h36m_motion_poses.reshape(T, 32, 3)
+    return h36m_motion_poses
+
+
+
+
+
+# end modifications
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -117,9 +153,35 @@ if __name__ == "__main__":
     shuffle = False
     sampler = None
     train_sampler = None
-    dataloader = DataLoader(dataset, batch_size=128,
+    # dataloader = DataLoader(dataset, batch_size=128,
+    #                         num_workers=1, drop_last=False,
+    #                         sampler=sampler, shuffle=shuffle, pin_memory=True)
+
+    # print(test(config, model, dataloader))
+
+    # new stuff
+    print("NEW STUFFFF -------------------")
+
+    input_filename = '/mnt/shared_drive/siMLPe/data/test_data/test_50.txt'
+    live_data = process_data(input_filename)
+    print("hi", live_data.shape)
+    dataloader = DataLoader(live_data, batch_size=128,
                             num_workers=1, drop_last=False,
                             sampler=sampler, shuffle=shuffle, pin_memory=True)
+    
+    joint_used_xyz = np.array([2,3,4,5,7,8,9,10,12,13,14,15,17,18,19,21,22,25,26,27,29,30]).astype(np.int64)
+    for (motion_input) in dataloader:
+        print("initial motion input shape", motion_input.shape)
+        # 128 batch size, 50 input poses, 32x2 joint positions
+        motion_input = motion_input.cuda().unsqueeze(0)
+        b,n,c,_ = motion_input.shape
 
-    print(test(config, model, dataloader))
+        motion_input = motion_input.reshape(b, n, 32, 3)
+        motion_input = motion_input[:, :, joint_used_xyz].reshape(b, n, -1)
+        print(motion_input.shape) #torch.Size([128, 50, 32, 3])
+        print("FORWARDS ", model.forward(motion_input).shape)
+
+    # print(test(config, model, dataloader))
+
+    # model.forward()
 

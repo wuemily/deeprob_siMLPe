@@ -75,6 +75,7 @@ class H36MEval(data.Dataset):
                 idx += 2
 
     def _preprocess(self, filename):
+        # print(filename)
         info = open(filename, 'r').readlines()
         pose_info = []
         for line in info:
