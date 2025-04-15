@@ -2,3 +2,4 @@
 /exps/baseline_h36m/log/
 __pycache__/
 exps/baseline_h36m/runs/
+exps/baseline_h36m/baseline.txt

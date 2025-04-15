@@ -33,7 +33,7 @@ class siMLPe(nn.Module):
         nn.init.constant_(self.motion_fc_out.bias, 0)
 
     def forward(self, motion_input):
-        print("forward motion input shape", motion_input.shape)
+        # print("forward motion input shape", motion_input.shape)
 
         if self.temporal_fc_in:
             motion_feats = self.arr0(motion_input)
