@@ -47,11 +47,18 @@ add_path(osp.join(C.root_dir, 'lib'))
 C.h36m_anno_dir = osp.join(C.root_dir, 'data/h36m/')
 C.motion = edict()
 
-C.motion.h36m_input_length = 50
-C.motion.h36m_input_length_dct = 50
-C.motion.h36m_target_length_train = 10
-C.motion.h36m_target_length_eval = 25
-C.motion.dim = 66
+# C.motion.h36m_input_length = 50
+# C.motion.h36m_input_length_dct = 50
+# C.motion.h36m_target_length_train = 10
+# C.motion.h36m_target_length_eval = 25
+# C.motion.dim = 66 # num joints * 3
+
+# new one, less frames to predict from, less predictions in the future
+C.motion.h36m_input_length = 25
+C.motion.h36m_input_length_dct = 25  # if DCT is used, match the input length
+C.motion.h36m_target_length_train = 25
+C.motion.h36m_target_length_eval = 25  # was 25, now match prediction horizon
+C.motion.dim = 66 # num joints * 3
 
 C.data_aug = True
 C.deriv_input = True
@@ -63,7 +70,7 @@ C.use_relative_loss = True
 C.pre_dct = False
 C.post_dct = False
 ## Motion Network mlp
-dim_ = 66
+dim_ = 66 # num joints * 3
 C.motion_mlp = edict()
 C.motion_mlp.hidden_dim = dim_
 C.motion_mlp.seq_len = C.motion.h36m_input_length_dct

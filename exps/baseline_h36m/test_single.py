@@ -116,14 +116,37 @@ def process_data(filename):
         if len(line) > 0:
             pose_info.append(np.array([float(x) for x in line]))
             
-    pose_info = np.array(pose_info) # turn into np array, [x, 99]
+    pose_info = np.array(pose_info) # turn into np array, [x, num_ppl * 75]
 
-    pose_info = pose_info.reshape(-1, 33, 3) # into [x, num_joints, 3]
+    pose_info = pose_info[:, 0:75] # take first human
+    pose_info = pose_info.reshape(-1, 25, 3) # into [x, num_joints, 3]
 
-    pose_info[:, :2] = 0 # set first two joints to zero?? 
+    # BODY_25 indices that can be mapped to h36 32 joints
+    body25_indices = np.array([
+        10, 11, 12, 13, 15, 18, 1, 0,
+        5, 6, 7, 2, 3, 4, 17, 20,
+        15, 18, 19, 21, 22, 19
+    ])
 
-    N = pose_info.shape[0] 
-    pose_info = pose_info.reshape(-1, 3) # reshape into (x*33, 3)
+    # Corresponding H36M-style joint indices (matches joint_used_xyz)
+    pose32_target_indices = np.array([
+        2,  3,  4,  5,  7,  8,  9, 10,
+        12, 13, 14, 15, 17, 18, 19, 21,
+        22, 25, 26, 27, 29, 30
+    ])
+
+    pose_32 = np.zeros((pose_info.shape[0], 33, 3), dtype=np.float32) # get zeros for h36 format
+    pose_32[:, pose32_target_indices, :] = pose_info[:, body25_indices, :] # set corresponding 
+
+    pose_32[:, :2] = 0 # set first two joints to zero?? 
+
+    N = pose_32.shape[0] 
+    N = 50 # CHANGE LATER
+
+    print('bananananana', pose_32.shape)
+    pose_32 = pose_32[0:50, :, :] # shaping here for now, change later
+    pose_info = pose_32.reshape(-1, 3) # reshape into (x*33, 3)
+    print('dragonfruit', pose_info.shape)
 
     # def expmap2rotmat_torch(r):
     # """
@@ -137,7 +160,7 @@ def process_data(filename):
     pose_info = rotmat2xyz_torch(pose_info)
 
     # sample rate stuff (take every 2 poses)
-    sample_rate = 2
+    sample_rate = 1 
     sampled_index = np.arange(0, N, sample_rate)
     h36m_motion_poses = pose_info[sampled_index]
 
@@ -148,6 +171,8 @@ def process_data(filename):
 
 
 # end modifications
+    # Example usage:
+    # pred_xyz: shape (10, 22, 3)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -174,6 +199,7 @@ if __name__ == "__main__":
 
     print(test(config, model, dataloader))
 
+
     # new stuff
     print("NEW STUFFFF -------------------")
 
@@ -192,8 +218,10 @@ if __name__ == "__main__":
 
         print(model(data).reshape(1, 50, -1, 3).shape)
 
-        # prediction = model(data)
+        prediction = model(data)[:, :25]
+        pred_xyz = prediction.reshape(25, 22, 3)
 
+        print('prediction output', prediction.shape)
         # write data to output text file
 
 
