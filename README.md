@@ -1,6 +1,6 @@
 # DeepRob W25 siMLPe extension
 
-This repo contains the modified siMLPe architecture for use in the Deep Learning for 3d Robot Perception W25 Course at the University of Michigan.
+This repo contains the modified siMLPe architecture for use in the Deep Learning for 3d Robot Perception W25 Course at the University of Michigan (https://deeprob.org/w25/).
 
 # Dependencies
 - Modified OpenPose: https://github.com/studiorobot/openpose
